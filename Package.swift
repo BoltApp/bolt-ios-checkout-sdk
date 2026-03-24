@@ -6,21 +6,21 @@
 import PackageDescription
 
 let package = Package(
-    name: "Bolt",
+    name: "BoltCheckoutSDK",
     platforms: [.iOS(.v16)],
     products: [
         .library(
-            name: "Bolt",
-            targets: ["Bolt"]
+            name: "BoltCheckoutSDK",
+            targets: ["BoltCheckoutSDK"]
         )
     ],
     targets: [
         .binaryTarget(
-            name: "Bolt",
+            name: "BoltCheckoutSDK",
             // RELEASE_URL — replace with the GitHub release asset URL for each version
-            url: "https://github.com/BoltApp/bolt-ios-checkout-sdk/releases/download/v0.2.5/Bolt.xcframework.zip",
-            // RELEASE_CHECKSUM — replace with output of: swift package compute-checksum Bolt.xcframework.zip
-            checksum: "4cae310ca50f55d583f2a3599999c2a80496c63c87bf3c2f051d6844835c57a0"
+            url: "https://github.com/BoltApp/bolt-ios-checkout-sdk/releases/download/v0.3.1/BoltCheckoutSDK.xcframework.zip",
+            // RELEASE_CHECKSUM — replace with output of: swift package compute-checksum BoltCheckoutSDK.xcframework.zip
+            checksum: "57a2b00e5142aef6210516be4d3ba40a912a5fac25e9bcef55a534a6ba8a7861"
         )
     ]
 )

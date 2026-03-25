@@ -17,7 +17,7 @@ Swift Package Manager distribution for the Bolt iOS SDK — a native checkout, p
    https://github.com/BoltApp/bolt-ios-checkout-sdk
    ```
 3. Select the version rule (e.g. **Up to Next Major** from `0.1.0`)
-4. Add **Bolt** to your app target
+4. Add **BoltCheckoutSDK** to your app target
 
 ### Package.swift
 
@@ -28,7 +28,7 @@ dependencies: [
 targets: [
     .target(
         name: "YourApp",
-        dependencies: ["Bolt"]
+        dependencies: ["BoltCheckoutSDK"]
     )
 ]
 ```
@@ -40,88 +40,79 @@ targets: [
 Import the SDK in any file:
 
 ```swift
-import Bolt
+import BoltCheckoutSDK
 ```
 
-### Managed Checkout
+### Configuration
 
-Presents a full-screen Bolt checkout UI — handles shipping, payment, and order confirmation.
+Set your publishable key and environment before using any SDK feature. The publishable key is available in Merchant Dashboard → Developers → API.
 
 ```swift
-// 1. Create a Bolt order token on your backend using the CreateOrderToken API
-// 2. Initialize BoltCheckout (keys from Merchant Dashboard → Developers → API)
-let checkout = BoltCheckout(
-    publishableKey: "your-publishable-key",
-    apiKey: "your-api-key",
-    merchantDivisionId: "your-division-id",
-    environment: .production
-)
-
-// 3. Start checkout
-checkout.startCheckout(
-    presentingViewController: self,
-    orderToken: orderToken,
-    delegate: self
-)
-
-// 4. Handle callbacks
-extension MyViewController: BoltCheckoutDelegate {
-    func checkoutDidComplete(orderReference: String) { }
-    func checkoutDidFail(at step: BoltCheckoutStep, error: Error) { }
-    func checkoutDidCancel(at step: BoltCheckoutStep) { }
-    func checkoutDidReceiveAuthCode(_ authCode: String) { }
-}
+Bolt.ClientProperties.shared.environment = .production
+Bolt.ClientProperties.shared.publishableKey = "your-publishable-key"
 ```
 
-### Embedded Checkout
-
-Use your own checkout UI with Bolt's secure card tokenization.
+Register Bolt fonts if you use any UI components:
 
 ```swift
-let configuration = Bolt(environment: .production)
-    .withPublishableKey("your-publishable-key")
-    .withOrderToken(orderToken)
-    .configuration()
-
-Bolt.CreditCardViewFactory.presentCreditCardView(
-    configuration: configuration,
-    presentingViewController: self,
-    delegate: self
-)
-
-extension MyViewController: BoltCreditCardResultDelegate {
-    func creditCardViewDidFinish(creditCardInput: Bolt.Api.CreditCardInput?, error: String?) { }
-}
+Bolt.UI.registerFonts()
 ```
 
-### Apple Pay
+### Login (Authorization)
+
+#### SwiftUI
+
+Use the `.boltAuthorize()` view modifier:
 
 ```swift
-checkout.getApplePayContext(
-    orderToken: orderToken,
-    merchantName: "My Store",
-    merchantAppleId: "merchant.com.myapp",
-    merchantCountryCode: "US",
-    applePayDelegate: self
-) { [weak self] result in
-    if case .success(let applePay) = result {
-        self?.applePay = applePay
-        // Show PKPaymentButton and call applePay.start() on tap
+@State private var isAuthorizing = false
+
+var body: some View {
+    Button("Sign in with Bolt") {
+        isAuthorizing = true
     }
+    .boltAuthorize(
+        isAuthorizing: $isAuthorizing,
+        email: "user@example.com",
+        context: .checkout,
+        onAccountCheck: { accountExists in
+            // Called when account existence check completes
+        },
+        completion: { result in
+            switch result {
+            case .completed(let authorizationCode, let codeVerifier):
+                // Exchange auth code for access token via OAuthToken endpoint
+            case .canceled:
+                break
+            case .failed(let error):
+                // Handle error
+            }
+        }
+    )
 }
 ```
 
-### Single Sign-On
+#### UIKit
 
 ```swift
-checkout.startLogin(presentingViewController: self) { result in
-    switch result {
-    case .completed(let authorizationCode):
-        // Exchange auth code for Bolt access token
-    case .canceled: break
-    case .failed(let error): break
+Bolt.Login.startAuthorization(
+    email: "user@example.com",
+    parentViewController: self,
+    context: .checkout,
+    onAccountCheck: { accountExists in
+        // Called when account existence check completes
+    },
+    completion: { result in
+        switch result {
+        case .completed(let authorizationCode, let codeVerifier):
+            // Exchange auth code for access token via OAuthToken endpoint
+        case .canceled:
+            break
+        case .failed(let error):
+            // Handle error
+        }
     }
-}
+)
 ```
 
 ### Account Detection
@@ -129,14 +120,97 @@ checkout.startLogin(presentingViewController: self) { result in
 Check whether a user has a Bolt account before showing a login prompt:
 
 ```swift
-Bolt.Account.detectAccount(
-    publishableKey: "your-publishable-key",
-    email: "user@example.com"
-) { result in
-    if case .success(let hasAccount) = result, hasAccount {
-        // Show Bolt login option
+Bolt.Account.detectAccount(email: "user@example.com") { result in
+    switch result {
+    case .success(let hasAccount):
+        if hasAccount {
+            // Show Bolt login option
+        }
+    case .failure(let error):
+        // Handle error
     }
 }
+```
+
+### Credit Card Tokenization
+
+Securely tokenize credit card details:
+
+```swift
+let tokenizer = Bolt.CreditCardTokenizer()
+
+tokenizer.generateToken(cardNumber: "4111111111111111", cvv: "123") { result in
+    switch result {
+    case .success(let token):
+        // Use token.token, token.last4, token.bin, token.network, token.tokenExpiry
+    case .failure(let error):
+        // Handle error
+    }
+}
+```
+
+### UI Components
+
+The SDK provides pre-built UI components available in both SwiftUI and UIKit.
+
+#### SwiftUI
+
+```swift
+// Sign-in button
+Bolt.UI.SignInButton(context: .checkout) {
+    // Handle button tap — start authorization flow
+}
+
+// Account creation checkbox
+Bolt.UI.AccountCheckbox(
+    merchantName: "My Store",
+    isChecked: true,
+    onCheckboxTap: { isChecked in },
+    onLinkTap: { url in }
+)
+
+// Email info button
+Bolt.UI.EmailInfoButton { url in
+    // Handle link tap
+}
+
+// Signed-in status button
+Bolt.UI.SignedInStatusButton { url in
+    // Handle link tap
+}
+```
+
+#### UIKit
+
+```swift
+// Sign-in button
+let signInVC = Bolt.UI.SignInButtonViewController(context: .checkout)
+signInVC.delegate = self
+
+// Account checkbox
+let checkboxVC = Bolt.UI.AccountCheckboxViewController(merchantName: "My Store", isChecked: true)
+checkboxVC.delegate = self
+
+// Email info button
+let emailInfoVC = Bolt.UI.EmailInfoButtonViewController()
+emailInfoVC.delegate = self
+
+// Signed-in status button
+let statusVC = Bolt.UI.SignedInStatusButtonViewController()
+statusVC.delegate = self
+```
+
+### Analytics
+
+Log checkout events for analytics:
+
+```swift
+// Set common properties (e.g. session info)
+Bolt.Analytics.setCommonProperties(["sessionId": "abc123"])
+
+// Log an event
+Bolt.Analytics.log(.checkoutButtonTapped)
+Bolt.Analytics.log(.paymentMethodSelected(.creditCard), ["additional": "value"])
 ```
 
 ---

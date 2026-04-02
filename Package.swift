@@ -18,9 +18,9 @@ let package = Package(
         .binaryTarget(
             name: "BoltCheckoutSDK",
             // RELEASE_URL — replace with the GitHub release asset URL for each version
-            url: "https://github.com/BoltApp/bolt-ios-checkout-sdk/releases/download/v0.4.6/BoltCheckoutSDK.xcframework.zip",
+            url: "https://github.com/BoltApp/bolt-ios-checkout-sdk/releases/download/v0.4.7/BoltCheckoutSDK.xcframework.zip",
             // RELEASE_CHECKSUM — replace with output of: swift package compute-checksum BoltCheckoutSDK.xcframework.zip
-            checksum: "dd01ca099d920e909638fcf08cc32c965e2ba20f2f69fcd10de7541bc08ca34a"
+            checksum: "ede8d4c5f7d636fb16ff8ef0c669ef7823e370b8e07158f6eac088c26dc6e71e"
         )
     ]
 )

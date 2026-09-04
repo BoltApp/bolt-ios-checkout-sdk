@@ -233,4 +233,4 @@ Full integration guide, configuration options, and API reference:
 
 ## Support
 
-[support@bolt.com](mailto:support@bolt.com)
+[support@boltapp.com](mailto:support@boltapp.com)
